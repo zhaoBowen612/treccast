@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://apps.bdimg.com/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.bootcss.com/animate.css/3.5.2/animate.min.css">
+
+    <title>CIS</title>
+    <style>
+        div {
+            float: left;
+        }
+    </style>
+</head>
+<body>
+<div>
+    <h1 style="text-align: center">Conversational Information Seeking</h1>
+    <!--<div style="float: left; display: inline; width: 50%; padding: 2%">-->
+    <div style="border:1px solid black; width: 600px;margin: 15px; padding: 15px">
+        <form action="/getanswer" method="post" name="query">
+            <div>
+                <div style="margin: 5px; width: 100%">
+                    <h3 style="margin: 5px;">Set question:</h3>
+                    <input style="display: inline; margin: 5px; width: 100%" class='form-control' type="text" name="q1"
+                           placeholder="Please input your question one by one">
+                    <a href="/"><input style="display: inline; float: right; margin: 5px" class='btn btn-default'
+                                       type="button" name="clear"
+                                       value="Clear Current List"></a>
+                    <input style="display: inline; float: right; margin: 5px" class='btn btn-default' type="submit"
+                           name="add"
+                           value="Add a Question">
+                    <!--                    <input style="float: right; margin: 5px" class="btn btn-default" type="submit">-->
+                </div>
+            </div>
+
+
+            <div style="margin: 5px">
+                <div style="margin: 5px; width: 100%">
+                    <h4 style="display: inline;">Conversational Query Model:</h4>
+                    <!--                    <input style="display: inline; width: 100px;" class='form-control' type="text" name="con">-->
+                    <select style="display: inline; float: right;height: 30px; width: 25%" name="" id="">
+                        <option value="">conv_uw</option>
+                        <option value="">conv_w1</option>
+                        <option value="">conv_w2</option>
+                    </select>
+                </div>
+                <div style="margin: 5px; width: 100%">
+                    <h4 style="display: inline;">Returned Number</h4>
+                    <input style="display:inline; float: right; width: 25%" class="form-control" type="text"
+                           name="rnum">
+                </div>
+                <div style="margin: 5px; width: 100%">
+                    <h4 style="display: inline;">Indri Retrieved Number</h4>
+                    <input style="display:inline; float: right; width: 25%" class="form-control" type="text"
+                           name="inum">
+                </div>
+                <div style="margin: 5px; width: 100%">
+                    <h4 style="display: inline;">Edge Threshold</h4>
+                    <input style="display: inline; float: right; width: 25%;" class='form-control' type="text"
+                           name="edge">
+                </div>
+                <div style="margin: 5px; text-align: center;">
+                    <h4 style="display: inline;">h1</h4>
+                    <input style="display: inline; width: 30%" class='form-control' type="text" name="h1">
+                    <h4 style="display: inline;">h2</h4>
+                    <input style="display: inline; width: 30%" class='form-control' type="text" name="h2">
+                </div>
+            </div>
+        </form>
+    </div>
+    <!--<div style="display: inline; width: 50%; padding: 2%">-->
+    <div style="display: inline; width: 600px; height: 600px; padding: 10px; margin: 15px; border: 1px solid black">
+        <h3 style="padding: 0">Result:</h3>
+        <!--    <div style="display: inline; width: 200px; height: 200px;  border: 1px solid black" class='form-control'>-->
+        <div style="display: inline; width: 100%; height: 500px;  border: 1px solid black; padding: 5px; overflow-y:scroll;">
+
+            {% for item in result1 %}
+            <p>{{ result1.index(item) + 1 }} : {{ item }}</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+</body>
+</html>
