@@ -32,7 +32,6 @@ CAR_ID_LOC = 'data/car_ids'
 MARCO_ID_LOC = 'data/marco_ids'
 
 # location of Indri command line tool
-# INDRI_LOC = 'indri-5.12\runquery'
 INDRI_LOC = '/usr/local/bin'
 # the co-occurence window is set to 3 for our graph
 COOC_WINDOW = 3
@@ -200,16 +199,12 @@ class Treccast:
         # get tokenized queries and the embeddings of each token
         for i in range(len(conv_queries)):  # traverse each query and get vectors and token lists
             # for each query, return dic(tokens in one query, embedding), list
-            # why this line is wrong
-            # turn_query_embeddings[i], query_tokens[i] = self.getQueryEmbeddings(conv_queries[i])
-            tmp_tokens = self.getQueryEmbeddings(conv_queries[i])
-            # turn_query_embeddings[i] = tmp_embeddings
-            query_tokens[i] = tmp_tokens
+            turn_query_embeddings[i], query_tokens[i] = self.getQueryEmbeddings(conv_queries[i])
 
         # turn_nbr := Number of questions
         # in such a situation, we only consider the last one as the current query?
         current_query_embeddings = turn_query_embeddings[turn_nbr]  # get the tokens embeddings of current query
-        # tokens = query_tokens[turn_nbr]  # get the tokens of the current turn
+        tokens = query_tokens[turn_nbr]  # get the tokens of the current turn
         query_turn_weights = dict()
         # dict(tokens of chosen queries, embeddings)
         conv_query_embeddings = dict(current_query_embeddings)  # current turn is necessary for the three options
@@ -249,10 +244,9 @@ class Treccast:
         # query_tokens[0] := all tokens of the first query,
         # turn_nbr := the num of the current query
         self.createIndriQuery(tokens, query_tokens, turn_nbr)
-        # self.logger.info("indri query created successfully")
+        print("indri query created successfully")
 
         # do indri search
-
         print('sending query')
         subprocess.run(['scp', 'data/indri_data/indri_queries/indri-query.query',
                         'zhaobowen@192.168.176.142:~/PycharmProjects/crown/data/indri_data/indri_queries/'])
@@ -280,9 +274,17 @@ class Treccast:
         # indri_paragraphs is a name to paragraph dict
         line_embeddings = self.getParagraphInfos(indri_paragraphs)
 
-        # calculate our indri_score which is 1 / indri rank
+        # calculate indri_score which is 1 / indri rank
         for id in indri_paragraph_score.keys():
             indri_paragraph_score[id] = 1 / int(indri_paragraph_score[id])
+
+        # calculate line_score by bert
+        # use cos(vec1, vec2) > cos(vec1, vec3) to show similarity between vec1 and vec2 is higher
+        # instead of using cos(vec1, vec2) = 0.8
+        for para_vec in line_embeddings:
+            for query_vec in turn_query_embeddings[]:
+                cs([])
+
 
 '''
         query_to_graph_token = dict()
