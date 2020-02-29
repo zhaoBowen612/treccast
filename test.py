@@ -6,5 +6,5 @@ paragraph_map = {}
 with open('MARCO_1.txt', 'r') as f:
     paragraph_map['MARCO_1.txt'] = list(f.readlines())
 
-Treccast.getParagraphInfos(paragraph_map)
+# Treccast.getParagraphInfos(paragraph_map)
 

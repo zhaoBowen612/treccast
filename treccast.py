@@ -33,7 +33,7 @@ MARCO_ID_LOC = 'data/marco_ids'
 
 # location of Indri command line tool
 INDRI_LOC = '/usr/local/bin'
-# the co-occurence window is set to 3 for our graph
+# the co-occurrence window is set to 3 for our graph
 COOC_WINDOW = 3
 
 # number of documents in MARCO TREC-CAsT corpus
@@ -51,13 +51,12 @@ class Treccast:
         # self.crown_logger.setLevel(logging.DEBUG)
         # self.logger.addHandler(self.crown_logger)
         # logging.basicConfig(filename="logging\Log-" + str(self.call_time) + ".log",level=logging.DEBUG)
-
     # return the embedding of each token and the tokenized queries
     # use str2word vector for query
     def getQueryEmbeddings(self, query):
+        # TODO: consider to remove the punctuation before BERTing
         print('query:', query)
         doc = nlp(query)
-        print(doc.text)
         # remaining words are meaningful ones from queries, punctuation is removed by isalpha()
         tokens = [token.text.lower() for token in doc if token.text.isalpha() and not token.is_stop]
         return self.word_vectors.encode([doc.text]), tokens  # return (bert, list)
@@ -196,60 +195,60 @@ class Treccast:
         turn_query_embeddings = dict()
         query_tokens = dict()
 
-        # get tokenized queries and the embeddings of each token
-        for i in range(len(conv_queries)):  # traverse each query and get vectors and token lists
-            # for each query, return dic(tokens in one query, embedding), list
+        # traverse each query and get vectors and token lists
+        for i in range(len(conv_queries)):
+            # for each query, return dic(line, embedding), list
             turn_query_embeddings[i], query_tokens[i] = self.getQueryEmbeddings(conv_queries[i])
 
-        # turn_nbr := Number of questions
-        # in such a situation, we only consider the last one as the current query?
-        current_query_embeddings = turn_query_embeddings[turn_nbr]  # get the tokens embeddings of current query
-        tokens = query_tokens[turn_nbr]  # get the tokens of the current turn
-        query_turn_weights = dict()
+        # turn_nbr := Number of questions - 1
+        # in such a situation, we only consider the last one as the current query
+        current_query_embeddings = turn_query_embeddings[0]  # get the tokens embeddings of the first query
+        # current_query_embeddings = turn_query_embeddings[turn_nbr]  # get the tokens embeddings of current query
+        # tokens = query_tokens[turn_nbr]  # get the tokens of the current turn
+        tokens = query_tokens[0]  # get the tokens of the the first turn
+        # query_turn_weights = dict()
         # dict(tokens of chosen queries, embeddings)
-        conv_query_embeddings = dict(current_query_embeddings)  # current turn is necessary for the three options
-
+        conv_query_embeddings = [current_query_embeddings]  # current turn is necessary for the three options
+        # print('conv_query_embeddings:', conv_query_embeddings)
         # create the conversational query (3 options are available)
         if convquery_type == "conv_uw":  # option 1: current + first
             if turn_nbr != 0:  # as long as the current is not the first one
                 #  add embeddings of the tokens in the first query
-                conv_query_embeddings.update(turn_query_embeddings[0])
+                conv_query_embeddings.append(turn_query_embeddings[turn_nbr])
         elif convquery_type == "conv_w1":  # option 2: current + previous + first
             if turn_nbr != 0:
-                conv_query_embeddings.update(turn_query_embeddings[0])  # first
-            for token in conv_query_embeddings.keys():
-                query_turn_weights[token] = 1.0
+                conv_query_embeddings.append(turn_query_embeddings[turn_nbr - 1])
             if turn_nbr > 1:
-                for token in turn_query_embeddings[turn_nbr - 1].keys():
-                    if not token in query_turn_weights.keys():  # avoid duplicates
-                        query_turn_weights[token] = turn_nbr / (turn_nbr + 1)  # weights can be found in the essays
-                conv_query_embeddings.update(turn_query_embeddings[turn_nbr - 1])  # previous
+                # for token in turn_query_embeddings[turn_nbr - 1].keys():
+                # query_turn_weights[token] = turn_nbr / (turn_nbr + 1)  # weights can be found in the essays
+                conv_query_embeddings.append(turn_query_embeddings[turn_nbr])  # previous
         else:
             # convquery_type == "conv_w2":  # all queries are considered
-            query_turn_weights = dict()  # token to related query turn weight
-            for j in range(turn_nbr + 1):
-                t_embeddings = turn_query_embeddings[j]
-                for token in t_embeddings.keys():
-                    conv_query_embeddings[token] = t_embeddings[token]
-                    if j == 0 or j == turn_nbr:
-                        query_turn_weights[token] = 1.0
-                    else:
-                        if token in query_turn_weights.keys():
-                            if query_turn_weights[token] == 1.0:
-                                continue
-                        query_turn_weights[token] = (j + 1) / (turn_nbr + 1)
+            # query_turn_weights = dict()  # token to related query turn weight
+            conv_query_embeddings.clear()
+            print('conv_query_embeddings', conv_query_embeddings)
+            for i in range(turn_nbr + 1):
+                conv_query_embeddings.append(turn_query_embeddings[i])
+            #     conv_query_embeddings[token] = t_embeddings[token]
+            #     if j == 0 or j == turn_nbr:
+            # query_turn_weights[token] = 1.0
+            # else:
+            #     if token in query_turn_weights.keys():
+            #         if query_turn_weights[token] == 1.0:
+            #             continue
+            #     query_turn_weights[token] = (j + 1) / (turn_nbr + 1)
 
         # create Indri query
         # tokens are all tokens in the current query,
         # query_tokens[0] := all tokens of the first query,
-        # turn_nbr := the num of the current query
+        # turn_nbr := the index of the current query
         self.createIndriQuery(tokens, query_tokens, turn_nbr)
         print("indri query created successfully")
 
         # do indri search
         print('sending query')
         subprocess.run(['scp', 'data/indri_data/indri_queries/indri-query.query',
-                        'zhaobowen@192.168.176.142:~/PycharmProjects/crown/data/indri_data/indri_queries/'])
+                        'zhaobowen@192.168.176.158:~/PycharmProjects/crown/data/indri_data/indri_queries/'])
         while not os.path.exists('data/indri_data/indri_results/result.txt'):
             time.sleep(1)
 
@@ -268,10 +267,7 @@ class Treccast:
 
         # get tokenized paragraphs, its token embeddings and info which token belongs to which paragraph
 
-        # token_embeddings := token to vector
-        # token_to_id := token to key(index file) list
-        # paragraph_to_tokens := key to token list
-        # indri_paragraphs is a name to paragraph dict
+        # line_embedding is a filename to embeddings dict
         line_embeddings = self.getParagraphInfos(indri_paragraphs)
 
         # calculate indri_score which is 1 / indri rank
@@ -281,9 +277,13 @@ class Treccast:
         # calculate line_score by bert
         # use cos(vec1, vec2) > cos(vec1, vec3) to show similarity between vec1 and vec2 is higher
         # instead of using cos(vec1, vec2) = 0.8
+        max_para = ''
+        max_score = 0
         for para_vec in line_embeddings:
-            for query_vec in turn_query_embeddings[]:
-                cs([])
+            for query_vec in conv_query_embeddings:
+                [[sim]] = cs(query_tokens, para_vec)
+                print('similarity is :', cs(query_tokens, para_vec))
+                print('similariy2 is :', cs([query_tokens], [para_vec]))
 
 
 '''
