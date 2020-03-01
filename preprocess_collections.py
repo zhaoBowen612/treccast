@@ -55,7 +55,6 @@ reformat("data/marco_ids/")
 reformat("data/car_ids/")
 # reformat("data/marco_test/")
 
-
 nlp = English()
 
 
@@ -67,29 +66,67 @@ def cut(path):
         for file in files:
             sentences = []
             i += 1
-            print(i, ' : ', file)
+            # print(i, ' : ', file)
             with open(path + file, 'r', encoding='UTF-8') as fp:
                 lines = fp.readlines()
             with open(path + file, 'w', encoding='UTF-8') as fp:
                 for line in lines:
                     doc = nlp(line)
                     cnt = 50
-                    while len(doc) > cnt:
-                        fp.write(doc[cnt - 50:cnt] + '\n')
-                        cnt += 50
+                    if len(doc) > cnt:
+                        while len(doc) > cnt:
+                            print(doc[cnt - 50: cnt].text)
+                            fp.write(doc[cnt - 50:cnt].text + '\n')
+                            cnt += 50
+                        fp.write(doc[cnt - 50:].text + '\n')
+                    else:
+                        fp.write(doc.text)
 
 
-reformat("data/marco_ids/")
-reformat("data/car_ids/")
+# cut("data/marco_test/")
+cut("data/marco_ids/")
+cut("data/car_ids/")
+
+
+def check(path):
+    result = []
+    flag = True
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            with open(path + file, 'r', encoding='UTF-8') as fp:
+                lines = fp.readlines()
+                for line in lines:
+                    if len(nlp(line)) > 60:
+                        result.append(file)
+                        flag = False
+                        break
+    if flag:
+        print("all < 60")
+    else:
+        print(result)
+
+
+check('data/marco_ids/')
+check('data/car_ids/')
 
 
 def test(file):
-    sentences = []
+    i = 0
+    # result = []
+    # max_len = 0
     with open(file, 'r', encoding='UTF-8') as fp:
-        for sen in sent_tokenize(fp.read()):
-            sentences.append(sen + '\n')
-            print(sen)
-    with open(file, 'w') as fp:
-        fp.writelines(sentences)
+        lines = fp.readlines()
+    with open(file, 'w', encoding='UTF-8') as fp:
+        for line in lines:
+            doc = nlp(line)
+            cnt = 50
+            if len(doc) > cnt:
+                while len(doc) > cnt:
+                    print(doc[cnt - 50: cnt].text)
+                    fp.write(doc[cnt - 50:cnt].text + '\n')
+                    cnt += 50
+                fp.write(doc[cnt - 50:].text + '\n')
+            else:
+                fp.write(doc.text)
 
-# test('MARCO_1.txt')
+# test('MARCO_2.txt')

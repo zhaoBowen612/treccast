@@ -75,7 +75,4 @@ if __name__ == '__main__':
     # logging.info("app has IP: %s and port: %i", HOST, PORT)
     app.run(host=HOST, port=PORT, threaded=True, debug=True)
 
-'''
--questions ["What flowering plants work for cold climates?","How much cold can pansies tolerate?"]
-'''
 # server side "bert-serving-start -model_dir wwm_cased_L-24_H-1024_A-16/ -num_worker=1"

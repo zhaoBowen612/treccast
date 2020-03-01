@@ -56,7 +56,7 @@ class Treccast:
     # use str2word vector for query
     def getQueryEmbeddings(self, query):
         # TODO: consider to remove the punctuation before BERTing
-        print('query:', query)
+        # print('query:', query)
         doc = nlp(query)
         # remaining words are meaningful ones from queries, punctuation is removed by isalpha()
         tokens = [token.text.lower() for token in doc if token.text.isalpha() and not token.is_stop]
@@ -67,6 +67,7 @@ class Treccast:
     # @staticmethod
     # def getParagraphInfos(paragraph_map):
     def getParagraphInfos(self, paragraph_map):
+        print('getParagraphInfos')
         filename_to_embeddings = dict()  # token_embeddings[line] = vector
         # paragraph_map is dict str:str
         for key in paragraph_map:
@@ -75,7 +76,15 @@ class Treccast:
             # doc = nlp(''.join(paragraph_map[key]))
             # break one paragraph into token list
             lines = list(line for line in paragraph_map[key])
-            filename_to_embeddings[key] = self.word_vectors.encode(lines)
+            l = []
+            print(key)
+            for line in lines:
+                line = line.strip('\n')
+                line = line.strip(' ')
+                l.append(line)
+            l = list(filter(None, l))
+            print(l)
+            filename_to_embeddings[key] = self.word_vectors.encode(l)
             # tokens = list([token.text.lower() for token in doc if token.text.isalpha() and not token.is_stop])
 
             # paragraph_to_lines[key] = lines  # use one file name to find the related line vec
@@ -114,7 +123,7 @@ class Treccast:
                     # if os.path.exists(MARCO_ID_LOC + splits[2] + ".txt"):
                     if os.path.exists(splits[2]):
                         try:
-                            print('find an marco file')
+                            # print('find an marco file')
                             with open(splits[2], "r", encoding='UTF-8') as id_file:
                                 # paragraph.append(line for line in id_file.readlines())
                                 paragraph = id_file.readlines()
@@ -128,7 +137,7 @@ class Treccast:
                     if os.path.exists(splits[2]):
                         try:
                             with open(splits[2], "r", encoding='UTF-8') as id_file:
-                                print('find an car file')
+                                # print('find an car file')
                                 paragraph = id_file.readlines()
                                 id_file.close()
                         except IOError:
@@ -174,7 +183,7 @@ class Treccast:
                 new_line = "<text>#combine(" + line_str + ")</text>"
             xmlString += new_line
             xmlString += '''</query></parameters>'''
-            print('query is: ' + xmlString)
+            # print('query is: ' + xmlString)
             query_file.write(xmlString)
 
     # main answering function: receives all relevant parameters to answer the request
@@ -249,7 +258,7 @@ class Treccast:
         # do indri search
         print('sending query')
         subprocess.run(['scp', 'data/indri_data/indri_queries/indri-query.query',
-                        'zhaobowen@192.168.176.158:~/PycharmProjects/crown/data/indri_data/indri_queries/'])
+                        'zhaobowen@192.168.176.161:~/PycharmProjects/crown/data/indri_data/indri_queries/'])
         while not os.path.exists('data/indri_data/indri_results/result.txt'):
             time.sleep(1)
 
@@ -280,11 +289,12 @@ class Treccast:
         # instead of using cos(vec1, vec2) = 0.8
         max_para = ''
         max_score = 0
-        for para_vec in line_embeddings:
+        for para_vec in line_embeddings.values():
             for query_vec in conv_query_embeddings:
-                # [[sim]] = cs(query_tokens, para_vec)
-                # print('similarity is :', cs(query_tokens, para_vec))
-                print('similariy2 is :', cs([query_tokens], [para_vec]))
+                print('para_vec', para_vec)
+                print('query_vec', query_vec)
+                print(cs(query_vec, para_vec))
+                # print('similariy2 is :', cs(para_vec, query_vec))
 
 
 '''

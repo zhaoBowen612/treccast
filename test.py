@@ -53,21 +53,25 @@ def count(path):
 
 
 # count("data/car_ids/")
-'''
-['CAR_008793e947ff278a4016db79b3280045b881165f.txt', 'CAR_00899d0eeb9a627550940ef58f22432d13c7c869.txt'] 
-'''
-special = ['CAR_00d98b5c3c5a1d15c744598d30b0086df076e4cd.txt',
-           'CAR_005b665f1603883f374c0b62337f960f7f0ca6bf.txt',
-           'CAR_000cfbd578301188c4030f31c1a7498aadf013b4.txt',
-           'CAR_0052df8c4ffa18d8093901f7d05672ff50b8385e.txt',
-           'CAR_001be17cf3c11f2cff765dff17296c6739a3b75e.txt',
-           'CAR_005efe0d746119f4cd4aad942b72acea9872352c.txt']
-
 # count("data/marco_ids/")
 
 doc = nlp('how are you I am fine thank you and you')
-print(nlp)
-print(doc[0: 3])
-print(doc[3: 6])
-print(doc[6: 9])
+# print(nlp)
+# print(doc[0: 3])
+# print(doc[3: 6])
+# print(doc[6: 9])
 
+# with open('/Users/zhaobowen/PycharmProjects/CROWN/data/marco_ids/MARCO_71485.txt', 'r') as fp:
+#     lines = fp.readlines()
+#     for line in lines:
+#         print(line)
+#     print(len(nlp(fp.readline())))
+#     print(len(nlp(fp.readline())))
+lines = ['The bombing of Hiroshima and Nagasaki.\n', 'On August 6, 1945 the US dropped an atomic bomb (Little Boy) on Hiroshima in Japan.\n', 'Three days later a second atomic bomb (Fat Man) was dropped on the city of Nagasaki.These were the only times nuclear weapons have been used in war.Reasons for the bombing.Many reasons are given as to why the US administration decided to drop\n', 'the atomic bomb on Hiroshima and Nagasaki.\n', '\n', "Reasons include the following: 1  The United States wanted to force Japan's surrender as quickly as possible to minimize American casualties.easons for the bombing.\n", 'Many reasons are given as to why the US administration decided to drop the atomic bomb on Hiroshima and Nagasaki.\n', "Reasons include the following: 1  The United States wanted to force Japan's surrender as quickly as possible to minimize American casualties.\n"]
+l = []
+print(lines)
+for line in lines:
+    line = line.strip('\n')
+    line = line.strip(' ')
+    l.append(line)
+print(list(filter(None, l)))
