@@ -51,6 +51,7 @@ class Treccast:
         # self.crown_logger.setLevel(logging.DEBUG)
         # self.logger.addHandler(self.crown_logger)
         # logging.basicConfig(filename="logging\Log-" + str(self.call_time) + ".log",level=logging.DEBUG)
+
     # return the embedding of each token and the tokenized queries
     # use str2word vector for query
     def getQueryEmbeddings(self, query):
@@ -79,15 +80,15 @@ class Treccast:
 
             # paragraph_to_lines[key] = lines  # use one file name to find the related line vec
             # for l in lines:
-                # get vector of each token
-                # line_embeddings[l] = self.word_vectors[l]
-                # if token in token_to_ids.keys():
-                #     token_to_ids[token].append(key)
-                # else:
-                #     token_to_ids[token] = [key]
-                    # token_embeddings := token to vector
-                    # token_to_id := token to key(index file) list
-                    # paragraph_to_tokens := key to token list
+            # get vector of each token
+            # line_embeddings[l] = self.word_vectors[l]
+            # if token in token_to_ids.keys():
+            #     token_to_ids[token].append(key)
+            # else:
+            #     token_to_ids[token] = [key]
+            # token_embeddings := token to vector
+            # token_to_id := token to key(index file) list
+            # paragraph_to_tokens := key to token list
         # return token_embeddings, token_to_ids, paragraph_to_tokens
         return filename_to_embeddings
 
@@ -184,8 +185,8 @@ class Treccast:
         conv_queries = parameters["questions"]
         turn_nbr = len(conv_queries) - 1
         INDRI_RET_NUM = int(parameters["indriRetNbr"])
-        EDGE_THRESHOLD = float(parameters["edgeThreshold"])
-        NODE_MATCH_THRESHOLD = float(parameters["nodeThreshold"])
+        # EDGE_THRESHOLD = float(parameters["edgeThreshold"])
+        # NODE_MATCH_THRESHOLD = float(parameters["nodeThreshold"])
         res_nbr = int(parameters["retNbr"])
         convquery_type = parameters["convquery"]
         h1 = float(parameters["h1"])
@@ -281,8 +282,8 @@ class Treccast:
         max_score = 0
         for para_vec in line_embeddings:
             for query_vec in conv_query_embeddings:
-                [[sim]] = cs(query_tokens, para_vec)
-                print('similarity is :', cs(query_tokens, para_vec))
+                # [[sim]] = cs(query_tokens, para_vec)
+                # print('similarity is :', cs(query_tokens, para_vec))
                 print('similariy2 is :', cs([query_tokens], [para_vec]))
 
 

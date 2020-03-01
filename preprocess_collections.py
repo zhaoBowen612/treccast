@@ -1,5 +1,6 @@
 import re
 import os.path
+from spacy.lang.en import English
 from nltk.tokenize import sent_tokenize
 
 # path to location of the datasets
@@ -32,8 +33,8 @@ def process(loc, folder):
             line = fp.readline()
 
 
-# process(MARCO_TRECWEB_LOC, "data/marco_ids")
-# process(CAR_TRECWEB_LOC, "data/car_ids")
+process(MARCO_TRECWEB_LOC, "data/marco_ids")
+process(CAR_TRECWEB_LOC, "data/car_ids")
 
 
 def reformat(path):
@@ -50,6 +51,38 @@ def reformat(path):
             i += 1
 
 
+reformat("data/marco_ids/")
+reformat("data/car_ids/")
+# reformat("data/marco_test/")
+
+
+nlp = English()
+
+
+def cut(path):
+    i = 0
+    result = []
+    max_len = 0
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            sentences = []
+            i += 1
+            print(i, ' : ', file)
+            with open(path + file, 'r', encoding='UTF-8') as fp:
+                lines = fp.readlines()
+            with open(path + file, 'w', encoding='UTF-8') as fp:
+                for line in lines:
+                    doc = nlp(line)
+                    cnt = 50
+                    while len(doc) > cnt:
+                        fp.write(doc[cnt - 50:cnt] + '\n')
+                        cnt += 50
+
+
+reformat("data/marco_ids/")
+reformat("data/car_ids/")
+
+
 def test(file):
     sentences = []
     with open(file, 'r', encoding='UTF-8') as fp:
@@ -59,9 +92,4 @@ def test(file):
     with open(file, 'w') as fp:
         fp.writelines(sentences)
 
-
-# reformat("data/marco_ids/")
-# reformat("data/marco_test/")
-reformat("data/car_ids/")
 # test('MARCO_1.txt')
-
