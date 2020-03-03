@@ -33,8 +33,8 @@ def process(loc, folder):
             line = fp.readline()
 
 
-process(MARCO_TRECWEB_LOC, "data/marco_ids")
-process(CAR_TRECWEB_LOC, "data/car_ids")
+# process(MARCO_TRECWEB_LOC, "data/marco_ids")
+# process(CAR_TRECWEB_LOC, "data/car_ids")
 
 
 def reformat(path):
@@ -51,9 +51,8 @@ def reformat(path):
             i += 1
 
 
-reformat("data/marco_ids/")
-reformat("data/car_ids/")
-# reformat("data/marco_test/")
+# reformat("data/marco_ids/")
+# reformat("data/car_ids/")
 
 nlp = English()
 
@@ -84,8 +83,8 @@ def cut(path):
 
 
 # cut("data/marco_test/")
-cut("data/marco_ids/")
-cut("data/car_ids/")
+# cut("data/marco_ids/")
+# cut("data/car_ids/")
 
 
 def check(path):
@@ -106,27 +105,24 @@ def check(path):
         print(result)
 
 
-check('data/marco_ids/')
-check('data/car_ids/')
+# check('data/marco_ids/')
+# check('data/car_ids/')
 
 
-def test(file):
-    i = 0
-    # result = []
-    # max_len = 0
-    with open(file, 'r', encoding='UTF-8') as fp:
-        lines = fp.readlines()
-    with open(file, 'w', encoding='UTF-8') as fp:
-        for line in lines:
-            doc = nlp(line)
-            cnt = 50
-            if len(doc) > cnt:
-                while len(doc) > cnt:
-                    print(doc[cnt - 50: cnt].text)
-                    fp.write(doc[cnt - 50:cnt].text + '\n')
-                    cnt += 50
-                fp.write(doc[cnt - 50:].text + '\n')
-            else:
-                fp.write(doc.text)
+def test(path):
+    for root, dirs, files in os.walk(path):
+        # print(files)
+        for file in files:
+            with open(path + file, 'r', encoding='UTF-8') as fp:
+                lines = fp.readlines()
+            with open(path + file, 'w', encoding='UTF-8') as fp:
+                for line in lines:
+                    if line == '\n':
+                        continue
+                    else:
+                        fp.write(line)
 
-# test('MARCO_2.txt')
+
+test('data/marco_ids/')
+test('data/car_ids/')
+# test('data/test_set/')

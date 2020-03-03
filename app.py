@@ -36,6 +36,7 @@ CORS(app)
 
 # app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 query = []
+result = []
 
 
 @app.route('/getanswer', methods=['GET', 'POST'])
@@ -56,17 +57,20 @@ def getanswer():
                    }
         t = Treccast(model)
         # get answer
-        result_paragraphs, result_ids, result_node_map, result_edge_map = t.retrieveAnswer(content)
-        result = jsonify(paragraphs=result_paragraphs, ids=result_ids, nodes=result_node_map, edges=result_edge_map)
-        # logging.info("TRECCAST CROWN Result: %s", result)
-        # print(content)
-        return render_template('index.html', result1=result_paragraphs, result2=result_ids, result3=result_node_map,
-                               result4=result_edge_map)
+        # result_paragraph is id to paragraph dict
+        # result_score is id to score dict
+        result_ids, result_paragraphs, result_score = t.retrieveAnswer(content)
+        # 评估的时候需要返回所有段落及评分
+        result.append((result_ids, result_paragraphs, result_score))
+        # result = jsonify(paragraphs=result_paragraphs, ids=result_ids, nodes=result_node_map, edges=result_edge_map)
+        # return render_template('index.html', result_para=result_paragraphs, result_score=result_score, result_ids=result_ids)
+        return render_template('index.html', result=result)
 
 
 @app.route('/')
 def index():
     query.clear()
+    result.clear()
     return render_template('index.html')
 
 

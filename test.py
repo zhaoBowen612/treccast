@@ -1,4 +1,5 @@
 from treccast import *
+from sklearn.metrics.pairwise import cosine_similarity as cs
 import re
 import nltk
 from spacy.lang.en import English
@@ -67,11 +68,14 @@ doc = nlp('how are you I am fine thank you and you')
 #         print(line)
 #     print(len(nlp(fp.readline())))
 #     print(len(nlp(fp.readline())))
-lines = ['The bombing of Hiroshima and Nagasaki.\n', 'On August 6, 1945 the US dropped an atomic bomb (Little Boy) on Hiroshima in Japan.\n', 'Three days later a second atomic bomb (Fat Man) was dropped on the city of Nagasaki.These were the only times nuclear weapons have been used in war.Reasons for the bombing.Many reasons are given as to why the US administration decided to drop\n', 'the atomic bomb on Hiroshima and Nagasaki.\n', '\n', "Reasons include the following: 1  The United States wanted to force Japan's surrender as quickly as possible to minimize American casualties.easons for the bombing.\n", 'Many reasons are given as to why the US administration decided to drop the atomic bomb on Hiroshima and Nagasaki.\n', "Reasons include the following: 1  The United States wanted to force Japan's surrender as quickly as possible to minimize American casualties.\n"]
-l = []
-print(lines)
-for line in lines:
-    line = line.strip('\n')
-    line = line.strip(' ')
-    l.append(line)
-print(list(filter(None, l)))
+# print(cs([[1, 2, 3]], [[1, 2, 4]]))
+# [[sim]] = cs([[1, 2, 3]], [[1, 2, 4]])
+# print(sim)
+# print([[sim]])
+# aList = [123,  'zara', 'abc']
+#
+# aList.remove('xyz')
+# print(aList)
+li = [123, 234, 345, 456, 567, 678, 789]
+for i in range(len(li)):
+    print(i, li[i])

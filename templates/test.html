@@ -2,7 +2,33 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>small win</title>
+    <script>
+        window.onload = function () {
+            var cl1 = document.getElementById('yes');
+            var cl2 = document.getElementById('close');
+            var win = document.getElementById('win');
+            cl1.onclick = function () {
+                document.getElementById('win').style.display = "none";
+                console.log('123');
+            };
+            cl2.onclick = function () {
+                document.getElementById('win').style.display = "none";
+                console.log('456');
+            };
+            window.onclick = function (event) {
+                if (event.target === win) {
+                    win.style.display = "none";
+                }
+            }
+        };
+
+        function fun1() {
+            document.getElementById('win').style.display = "block";
+        }
+
+
+    </script>
     <style>
         div {
             float: left;
@@ -10,9 +36,17 @@
     </style>
 </head>
 <body>
-<h1 style="text-align:center">hello world</h1>
-<div style="border: black 1px solid; width: 55px; height: 55px"></div>
-<div style="border: black 1px solid; width: 55px; height: 55px"></div>
-<textarea name="" id="" cols="30" rows="10" disabled="disabled">hello world</textarea>
+<a onclick="fun1()"><h1 style="text-align:center">hello world</h1></a>
+<div id="win" style="display: none; width: 500px; height: 400px; border: solid black 1px">
+    <div style="margin:10px; width: 90%; height: 90%; border: solid black 1px">
+        <input type="text">
+        <input type="text">
+        <input style="" type="button" id="yes" value="yes">
+        <input style="display: inline" type="button" id="close" value="no">
+    </div>
+</div>
+<!--<div style="border: black 1px solid; width: 55px; height: 55px"></div>-->
+<!--<div style="border: black 1px solid; width: 55px; height: 55px"></div>-->
+<!--<textarea name="" id="" cols="30" rows="10" disabled="disabled">hello world</textarea>-->
 </body>
 </html>
