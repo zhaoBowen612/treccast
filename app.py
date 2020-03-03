@@ -48,22 +48,16 @@ def getanswer():
         query.append(request.form.get('q1'))
         content = {"questions": query,
                    "indriRetNbr": request.form.get('inum'),
-                   # "edgeThreshold": 0.5,
-                   # "nodeThreshold": 0.5,
                    "retNbr": request.form.get('rnum'),
                    "convquery": request.form.get('sel'),
                    "h1": request.form.get('h1'),
                    "h2": request.form.get('h2'),
                    }
         t = Treccast(model)
-        # get answer
-        # result_paragraph is id to paragraph dict
-        # result_score is id to score dict
-        result_ids, result_paragraphs, result_score = t.retrieveAnswer(content)
+        result_ids, para_score, result_content = t.retrieveAnswer(content)
         # 评估的时候需要返回所有段落及评分
-        result.append((result_ids, result_paragraphs, result_score))
+        result.append((result_ids, para_score[result_ids], result_content))
         # result = jsonify(paragraphs=result_paragraphs, ids=result_ids, nodes=result_node_map, edges=result_edge_map)
-        # return render_template('index.html', result_para=result_paragraphs, result_score=result_score, result_ids=result_ids)
         return render_template('index.html', result=result)
 
 

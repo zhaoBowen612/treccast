@@ -77,8 +77,8 @@
         <!--    <div style="display: inline; width: 200px; height: 200px;  border: 1px solid black" class='form-control'>-->
         <div style="display: inline; width: 100%; height: 500px;  border: 1px solid black; padding: 5px; overflow-y:scroll;">
 
-            {% for item in result1 %}
-            <p>{{ result1.index(item) + 1 }} : {{ item }}</p>
+            {% for item in result %}
+            <p>{{ item[0] }} {{ item[1] }} {{ item[2] }}</p>
             {% endfor %}
         </div>
     </div>

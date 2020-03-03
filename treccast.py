@@ -181,14 +181,9 @@ class Treccast:
 
         # turn_nbr := Number of questions - 1
         # in such a situation, we only consider the last one as the current query
-        first_query_embeddings = turn_query_embeddings[0]  # get the tokens embeddings of the first query
-        # current_query_embeddings = turn_query_embeddings[turn_nbr]  # get the tokens embeddings of current query
-        # tokens = query_tokens[turn_nbr]  # get the tokens of the current turn
+        first_query_embeddings = turn_query_embeddings[0]  # get the line_embeddings of the first query
         tokens = query_tokens[0]  # get the tokens of the the first turn
-        # query_turn_weights = dict()
-        # dict(tokens of chosen queries, embeddings)
         conv_query_embeddings = [first_query_embeddings]  # current turn is necessary for the three options
-        # print('conv_query_embeddings:', conv_query_embeddings)
         # create the conversational query (3 options are available)
         if convquery_type == "conv_uw":  # option 1: current + first
             if turn_nbr != 0:  # as long as the current is not the first one
@@ -224,13 +219,14 @@ class Treccast:
         self.createIndriQuery(tokens, query_tokens, turn_nbr)
         # print("indri query created successfully")
 
+        # TODO: RECOVER
         # do indri search
-        print('sending query')
-        subprocess.run(['scp', 'data/indri_data/indri_queries/indri-query.query',
-                        'zhaobowen@192.168.176.161:~/PycharmProjects/treccast/data/indri_data/indri_queries/'])
-        while not os.path.exists('data/indri_data/indri_results/result.txt'):
-            time.sleep(1)
-        print('received')
+        # print('sending query')
+        # subprocess.run(['scp', 'data/indri_data/indri_queries/indri-query.query',
+        #                 'zhaobowen@192.168.176.161:~/PycharmProjects/treccast/data/indri_data/indri_queries/'])
+        # while not os.path.exists('data/indri_data/indri_results/result.txt'):
+        #     time.sleep(1)
+        # print('received')
 
         '''
         subprocess.run([INDRI_LOC + "/IndriRunQuery",
@@ -240,7 +236,7 @@ class Treccast:
         '''
 
         # prepare indri paragraphs: get paragraph sentences and original indri scores from indri result file
-        # indri_patagraph_score is file name to ranking. get reciprocal as the Indri mark
+        # indri_paragraph_score is file name to ranking. get reciprocal as the Indri mark
         indri_paragraphs, indri_paragraph_score = self.processIndriResult(
             # 'data/indri_data/indri_results/result' + "_" + str(self.call_time) + "_turn" + str(turn_nbr + 1) + '.txt')
             'data/indri_data/indri_results/result.txt')
@@ -262,61 +258,59 @@ class Treccast:
             print('attention: Line 262')
 
         # para_score is a filename to int dict
-        max_score, max_id, para_score = self.scoring(convquery_type, conv_query_embeddings, line_embeddings)
+        max_id, para_score = self.scoring(convquery_type, conv_query_embeddings, line_embeddings)
 
-        os.remove('data/indri_data/indri_results/result.txt')
-        print('removed')
+        # TODO: recover
+        # os.remove('data/indri_data/indri_results/result.txt')
+        # print('removed')
 
-        # return max_id, max_para, max_score
+        return max_id, para_score, indri_paragraphs[max_id]
 
     def scoring(self, convquery_type, conv_query_embeddings, line_embeddings):
-        max_score = 0
         max_id = ''
+        max_score = 0
         para_score = dict()
         if convquery_type == 'conv_uw':
             # current + first
             print('num', len(conv_query_embeddings))
             if len(conv_query_embeddings) == 1:
                 # for each paragraph get a max line_score as para_score
-                # for all paragraph get a max para_score as return
                 for index, embeddings in line_embeddings.items():
                     para_score[index] = 0
                     for vec in embeddings:
-                        cs = cosine_similarity(conv_query_embeddings[0], vec)
+                        cs = cosine_similarity(conv_query_embeddings[0], [vec])
                         if cs > para_score[index]:
                             # update line_score of one paragraph
                             para_score[index] = cs
-                        if max_score < cs:
-                            # update para_score of all paragraphs
-                            max_score = cs
-                            max_id = index
+                    # for all paragraph get a max para_score as return
+                    if max_score < para_score[index]:
+                        max_score = para_score[index]
+                        max_id = index
             else:
+                # score1 + score2 is the para_score[index] value
+                score1 = 0
+                score2 = 0
+                # for each paragraph calculate a score
                 for index, embeddings in line_embeddings.items():
                     para_score[index] = 0
                     for vec in embeddings:
-                        cs = cosine_similarity(conv_query_embeddings[0], vec)
-                        if cs > para_score:
+                        cs = cosine_similarity(conv_query_embeddings[0], [vec])
+                        if cs > score1:
                             # update line_score of one paragraph
-                            para_score[index] = cs
-                        if max_score < cs:
-                            # update para_score of all paragraphs
-                            max_score = cs
+                            score1 = cs
                     for vec in embeddings:
-                        cs = cosine_similarity(conv_query_embeddings[1], vec)
-                        if cs > para_score:
+                        cs = cosine_similarity(conv_query_embeddings[1], [vec])
+                        if cs > score2:
                             # update line_score of one paragraph
-                            para_score[index] = cs
-                        if max_score < cs:
-                            # update para_score of all paragraphs
-                            max_score = cs
-                            max_id = index
-
-                # for key, value in line_embeddings.items():
-                #     for para_matrix in line_embeddings.values():
-                #         for vec in para_matrix:
-                #             for query_vec in conv_query_embeddings:
-                #                 [[sim]] = cosine_similarity(query_vec, [vec])
+                            score2 = cs
+                    para_score[index] = score1 + score2
+                    if max_score < para_score[index]:
+                        max_score = para_score[index]
+                        max_id = index
         elif convquery_type == 'conv_w1':
+            score1 = 0
+            score2 = 0
+            score3 = 0
             # current + previous + first
             print('num', len(conv_query_embeddings))
             if len(conv_query_embeddings) == 1:
@@ -325,77 +319,72 @@ class Treccast:
                 for index, embeddings in line_embeddings.items():
                     para_score[index] = 0
                     for vec in embeddings:
-                        cs = cosine_similarity(conv_query_embeddings[0], vec)
+                        cs = cosine_similarity(conv_query_embeddings[0], [vec])
+                        # update line_score of one paragraph
                         if cs > para_score[index]:
-                            # update line_score of one paragraph
                             para_score[index] = cs
-                        if max_score < cs:
-                            # update para_score of all paragraphs
-                            max_score = cs
-                            max_id = index
+                    # update para_score of all paragraphs
+                    if para_score[index] > max_score:
+                        max_score = para_score[index]
+                        max_id = index
             elif len(conv_query_embeddings) == 2:
                 for index, embeddings in line_embeddings.items():
                     para_score[index] = 0
                     for vec in embeddings:
-                        cs = cosine_similarity(conv_query_embeddings[0], vec)
+                        cs = cosine_similarity(conv_query_embeddings[0], [vec])
+                        # update line_score of one paragraph
                         if cs > para_score:
-                            # update line_score of one paragraph
-                            para_score[index] = cs
-                        if max_score < cs:
-                            # update para_score of all paragraphs
-                            max_score = cs
+                            score1 = cs
                     for vec in embeddings:
-                        cs = cosine_similarity(conv_query_embeddings[1], vec)
+                        cs = cosine_similarity(conv_query_embeddings[1], [vec])
                         if cs > para_score:
-                            # update line_score of one paragraph
-                            para_score[index] = cs
-                        if max_score < cs:
-                            # update para_score of all paragraphs
-                            max_score = cs
-                            max_id = index
+                            score2 = cs
+                    para_score[index] = score1 + score2
+                    if para_score[index] > max_score:
+                        max_score = para_score[index]
+                        max_id = index
             else:
                 for index, embeddings in line_embeddings.items():
                     para_score[index] = 0
                     for vec in embeddings:
-                        cs = cosine_similarity(conv_query_embeddings[0], vec)
-                        if cs > para_score:
-                            # update line_score of one paragraph
-                            para_score[index] = cs
-                        if max_score < cs:
-                            # update para_score of all paragraphs
-                            max_score = cs
-                            max_id = index
+                        cs = cosine_similarity(conv_query_embeddings[0], [vec])
+                        if cs > score1:
+                            score1 = cs
                     for vec in embeddings:
-                        cs = cosine_similarity(conv_query_embeddings[1], vec)
-                        if cs > para_score:
-                            # update line_score of one paragraph
-                            para_score[index] = cs
-                        if max_score < cs:
-                            # update para_score of all paragraphs
-                            max_score = cs
-                            max_id = index
+                        cs = cosine_similarity(conv_query_embeddings[1], [vec])
+                        if cs > score2:
+                            score2 = cs
                     for vec in embeddings:
-                        cs = cosine_similarity(conv_query_embeddings[2], vec)
-                        if cs > para_score:
-                            # update line_score of one paragraph
-                            para_score[index] = cs
-                        if max_score < cs:
-                            # update para_score of all paragraphs
-                            max_score = cs
-                            max_id = index
+                        cs = cosine_similarity(conv_query_embeddings[2], [vec])
+                        if cs > score3:
+                            score3 = cs
+                    # weight is (len - 1)/ len
+                    weight = (len(conv_query_embeddings) - 1)/len(conv_query_embeddings)
+                    para_score[index] = score1 + score2 * weight + score3
+                    if para_score[index] > max_score:
+                        max_score = para_score[index]
+                        max_id = index
+
         else:
-            # all queries
-            all = len(conv_query_embeddings)
-            for i in range(all):
-                # calculate weight
-                for index, embeddings in line_embeddings.items():
+            score = 0
+            final_score = 0
+            print('num', len(conv_query_embeddings))
+            length = len(conv_query_embeddings)
+            for index, embeddings in line_embeddings.items():
+                # traverse all query and get a final score for each para
+                for i in range(length):
                     for vec in embeddings:
-                        cs = cosine_similarity(conv_query_embeddings[i], vec) * (i + 1) / all
-                        if max_score < cs:
+                        cs = cosine_similarity(conv_query_embeddings[i], [vec])
+                        if score < cs:
                             # update para_score of all paragraphs
-                            max_score = cs
-                            max_id = index
-        return max_score, max_id, para_score
+                            score = cs
+                    weight = (i + 1) / length
+                    final_score += weight * score
+                para_score[index] = final_score
+                if max_score < para_score[index]:
+                    max_score = para_score[index]
+                    max_id = index
+        return max_id, para_score
 
 
 '''
