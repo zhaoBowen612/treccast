@@ -62,20 +62,14 @@ doc = nlp('how are you I am fine thank you and you')
 # print(doc[3: 6])
 # print(doc[6: 9])
 
-# with open('/Users/zhaobowen/PycharmProjects/CROWN/data/marco_ids/MARCO_71485.txt', 'r') as fp:
-#     lines = fp.readlines()
-#     for line in lines:
-#         print(line)
 #     print(len(nlp(fp.readline())))
 #     print(len(nlp(fp.readline())))
-# print(cs([[1, 2, 3]], [[1, 2, 4]]))
 # [[sim]] = cs([[1, 2, 3]], [[1, 2, 4]])
 # print(sim)
 # print([[sim]])
-# aList = [123,  'zara', 'abc']
-#
-# aList.remove('xyz')
-# print(aList)
-li = [123, 234, 345, 456, 567, 678, 789]
-for i in range(len(li)):
-    print(i, li[i])
+
+with open('data/evaluation/train_topics_mod.qrel', 'r') as ori:
+    l = []
+    for i in range(5):
+        l.append(ori.readline())
+    print(l)

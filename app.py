@@ -1,35 +1,16 @@
 from flask import Flask, request, jsonify, render_template, redirect
-# import os
-import pickle
-import gensim
 # import json
-import networkx as nx
 from flask_cors import CORS
-import logging
 from bert_serving.client import BertClient
 from treccast import *
 
 # logging.basicConfig(filename="logging/flask_demo.log", level=logging.INFO)
-
 # add name of host and port here
 HOST = '127.0.0.1'
 PORT = 5000
 
 # load word embeddings
 model = BertClient()
-# logging.info("embeddings loaded")
-
-# load proximity information
-# with open('data/graph_data/prox_3.pickle', 'rb') as handle:
-#     prox3_dict = pickle.load(handle)  # pickle is used for serialization
-# logging.info("proximity infos loaded")
-# print("load proximity information")
-
-# load graph created from marco corpus
-# G = nx.read_gpickle("data/graph_data/marco_graph_pmi3_edges.gpickle")
-# logging.info("Graph successfully loaded")
-# print("load graph created from marco corpus")
-
 
 app = Flask(__name__)
 CORS(app)
@@ -58,7 +39,7 @@ def getanswer():
         # 评估的时候需要返回所有段落及评分
         result.append((result_ids, para_score[result_ids], result_content))
         # result = jsonify(paragraphs=result_paragraphs, ids=result_ids, nodes=result_node_map, edges=result_edge_map)
-        return render_template('index.html', result=result)
+        return render_template('index.html', result=result, query=query)
 
 
 @app.route('/')

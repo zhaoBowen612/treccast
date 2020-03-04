@@ -2,12 +2,6 @@ from gensim.parsing.porter import PorterStemmer
 import os
 from spacy.lang.en import English
 from sklearn.metrics.pairwise import cosine_similarity
-import operator
-# import itertools
-# from argparse import ArgumentParser
-import subprocess
-# from subprocess import SubprocessError
-import logging
 import time
 
 nlp = English()
@@ -36,12 +30,6 @@ class Treccast:
     def __init__(self, word_vectors):
         self.word_vectors = word_vectors
         self.call_time = time.time()
-        # below is the logging part
-        # self.logger = logging.getLogger("crown_logger_" + str(self.call_time))
-        # self.crown_logger = logging.FileHandler("logging\Log-" + str(self.call_time) + ".log")
-        # self.crown_logger.setLevel(logging.DEBUG)
-        # self.logger.addHandler(self.crown_logger)
-        # logging.basicConfig(filename="logging\Log-" + str(self.call_time) + ".log",level=logging.DEBUG)
 
     # return the embedding of each token and the tokenized queries
     # use str2word vector for query
@@ -234,13 +222,12 @@ class Treccast:
                             turn_nbr + 1) + "_indri-query.query", "-count= " + str(INDRI_RET_NUM),
                         "-trecFormat=true"], stdout=outfile)
         '''
-
         # prepare indri paragraphs: get paragraph sentences and original indri scores from indri result file
         # indri_paragraph_score is file name to ranking. get reciprocal as the Indri mark
         indri_paragraphs, indri_paragraph_score = self.processIndriResult(
             # 'data/indri_data/indri_results/result' + "_" + str(self.call_time) + "_turn" + str(turn_nbr + 1) + '.txt')
             'data/indri_data/indri_results/result.txt')
-
+        # TODO: takes the longest time
         # line_embedding is a filename to embeddings dict
         line_embeddings = self.getParagraphInfos(indri_paragraphs)
 
@@ -386,125 +373,3 @@ class Treccast:
                     max_id = index
         return max_id, para_score
 
-
-'''
-        query_to_graph_token = dict()
-        # calculate node weights -> note: there are tokens which do not have an embedding: node weight=0
-        # start calculating another two scores of each candidate paragraph
-        for p_token in token_to_ids.keys():  # token_to_ids is token to file name
-            max_sim = 0.0
-            max_q_token = ''
-            if p_token in token_embeddings.keys():  # if this token has a related vector
-                for q_token in conv_query_embeddings.keys():
-                    # calculate the cos between query tokens and passages tokens
-                    # representation?????
-                    [[sim]] = cs([token_embeddings[p_token]], [conv_query_embeddings[q_token]])
-                    #  get the max_sim and the related query token
-                    # used in essay for node score
-                    if sim > max_sim:
-                        max_sim = sim
-                        max_q_token = q_token
-'''
-# divide
-
-'''
-            # calculate edge weights
-            for k in range(len(p_tokens)):
-                if not p_tokens[k] in self.G.nodes():  # still is this line necessary?
-                    continue
-                # check if token is close enough to a conversational query token (> NODE_MATCH_THRESHOLD)
-                if not p_tokens[k] in query_to_graph_token.keys():
-                    # query_to_graph_token is from p_token to find max q_tokens
-                    continue
-                if k >= (len(p_tokens) - COOC_WINDOW):  # context windows???
-                    upper_3 = len(p_tokens)
-                else:
-                    upper_3 = k + COOC_WINDOW + 1
-                    # go over all tokens which are in proximity 3 to current token
-                for j in range(k + 1, upper_3):
-                    if not p_tokens[j] in self.G.nodes():
-                        continue
-                    if p_tokens[j] == p_tokens[k]:
-                        continue
-                    if not p_tokens[j] in query_to_graph_token.keys():
-                        continue
-                    t1 = p_tokens[k]
-                    t2 = p_tokens[j]
-                    # check if there is an edge between the two
-                    if t1 in self.G.adj[t2]:
-                        # check if the two token are not similar to the same query token
-                        if not np.intersect1d(query_to_graph_token[t1], query_to_graph_token[t2]):
-                            # note that the current edge weight in the graph is the pmi value,
-                            # here nmpi is calculated out of it
-                            edge_weight = self.G.get_edge_data(t1, t2)['weight']
-                            if t1 < t2:
-                                prox3_prob = self.prox_dict[str(t1) + "_" + str(t2)] / nbr_docs
-                            else:
-                                prox3_prob = self.prox_dict[str(t2) + "_" + str(t1)] / nbr_docs
-                                #  calculate npmi
-                            edge_weight /= (- math.log(prox3_prob, 2))
-                            # consider edge weight if it is above the edge threshold
-                            if edge_weight > EDGE_THRESHOLD:
-                                edge_score += edge_weight
-                                edge_count += 1
-                                if t1 < t2:
-                                    pair = "(" + str(t1) + "," + str(t2) + ")"
-                                else:
-                                    pair = "(" + str(t2) + "," + str(t1) + ")"
-                                edge_map[p_key].append(pair)
-                                if not pair in edge_weight_map.keys():
-                                    edge_weight_map[pair] = edge_weight
-            # calculate the final edge score for the current paragraph
-            if edge_count != 0:
-                edge_score = edge_score / edge_count
-            edge_score_dict[p_key] = edge_score
-'''
-# self.logger.info("node and edge scores are calculated")
-
-'''
-# combine scores
-for p_key in indri_paragraphs.keys():
-    if not p_key in indri_paragraph_score.keys():
-        indri_paragraph_score[p_key] = 0.0
-
-for p_key in indri_paragraphs.keys():
-    p_score = h1 * float(indri_paragraph_score[p_key]) + h2 * node_score_dict[p_key] + h3 * edge_score_dict[
-        p_key]
-    scored_paragraphs_dict[p_key] = p_score
-
-# sort paragraphs according to three scores
-sorted_p = sorted(scored_paragraphs_dict.items(), key=operator.itemgetter(1), reverse=True)
-scored_paragraphs = [x[0] for x in sorted_p]
-
-# sort node and edge token candidates
-for p_key in indri_paragraphs.keys():
-    node_map[p_key] = list(set(node_map[p_key]))
-    node_map[p_key] = sorted(node_map[p_key], key=lambda x: self.G.nodes[x]['weight'], reverse=True)
-    if len(node_map[p_key]) > 5:
-        del node_map[p_key][5:]
-    edge_map[p_key] = list(set(edge_map[p_key]))
-    edge_map[p_key] = sorted(edge_map[p_key], key=lambda x: edge_weight_map[x], reverse=True)
-    if len(edge_map[p_key]) > 5:
-        del edge_map[p_key][5:]
-
-# get final list of paragraphs that will be returned to the user
-result_paragraphs = []
-result_ids = []
-result_node_map = dict()
-result_edge_map = dict()
-for p in range(len(scored_paragraphs)):
-    if p < res_nbr:  # res_nbr is number of passages return finally
-        result_paragraphs.append(indri_paragraphs[scored_paragraphs[p]])
-        result_ids.append(scored_paragraphs[p])
-        #     self.logger.info("Top : %i", (p+1))
-        #     self.logger.info("Paragraph ID: %s, score: %s", scored_paragraphs[p], sorted_p[p][1])
-        #     self.logger.info("Paragraph: %s", indri_paragraphs[scored_paragraphs[p]])
-        # else:
-        break
-
-for res_id in result_ids:
-    result_node_map[res_id] = node_map[res_id]
-    result_edge_map[res_id] = edge_map[res_id]
-
-return result_paragraphs, result_ids, result_node_map, result_edge_map
-'''
