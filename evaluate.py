@@ -2,29 +2,45 @@ from bert_serving.client import BertClient
 from treccast import Treccast
 import os
 import json
+import numpy as np
 
 ANSWER = 'data/evaluation/answer.txt'
 RESULT = 'data/indri_data/indri_result/result.txt'
 
 # load word embeddings
-# model = BertClient()
-model = ''
+model = BertClient()
 
 
-def evaluate(query_num):
+# model = ''
+
+
+def evaluate(path):
     # thirty_queries[0:29]
     thirty_queries = get_query()
     ans, mark = get_ans()
-    content = {"questions": [],
-               "indriRetNbr": 10,
-               "retNbr": 5,
-               "convquery": "conv_w1",
-               "h1": 0.5,
-               "h2": 0.5,
-               }
-    pass
     t = Treccast(model)
-    t.retrieveAnswer(query)
+    for i in range(30):
+        print('conversation', i)
+        current = []
+        i = 0
+        for turn in thirty_queries[i]:
+            print('turn', i, ':', turn)
+            i += 1
+            current.append(turn)
+            content = {"questions": current,
+                       "indriRetNbr": '10',
+                       "retNbr": '10',
+                       "convquery": "conv_w1",
+                       "h1": '0.5',
+                       "h2": '0.5',
+                       }
+            result_ids, para_score, result_content = t.retrieveAnswer(content)
+            with open('testing.txt', 'w') as result:
+                w = []
+                for key, value in para_score.items():
+                    w.append(key + ' : ' + str(value) + '\n')
+                result.writelines(w)
+
     ans = open(ANSWER, 'r')
     res = open(RESULT, 'r')
     print('AP@100 is', AP(ans))
@@ -32,7 +48,7 @@ def evaluate(query_num):
     print('ERR@100 is', ERR())
     ans.close()
     res.close()
-    pass
+    return
 
 
 def get_query():
@@ -40,16 +56,58 @@ def get_query():
     with open('data/evaluation/train_topics_v1.0.json') as q:
         dic = json.loads(q.read())
         query = []
-        for turn in dic[0]['turn']:
-            query.append(turn['raw_utterance'])
-        thirty_queries.append(query)
+        for i in range(30):
+            for turn in dic[i]['turn']:
+                # print(turn['raw_utterance'])
+                query.append(turn['raw_utterance'])
+            thirty_queries.append(query)
     return thirty_queries
 
 
-get_query()
+def get_ap_ans():
+    # only relevant or not matters
+    turn = dict()
+    with open('data/evaluation/train_topics_mod.qrel') as ans:
+        lines = ans.readlines()
+        for line in lines:
+            sp = line.split()
+            if sp[3] != '0':
+                # turn['1_2'] = "(MARCO_955948, 2)"
+                turn[sp[0]] = (sp[2], sp[3])
+    return turn
 
 
-def get_ans():
+def AP(fp):
+    ap = 0
+    # turn_ans['1_2'] = "(MARCO_955948, 2)"
+    turn_ans = get_ap_ans()
+    cnt = 0
+    # retrieved result
+    result_l = []
+    # actual relevant items
+    rel_l = []
+    for i, rel in enumerate(result_l):
+        if rel in rel_l:
+            cnt += 1
+            ap += cnt / i + 1
+    return ap / len(rel_l)
+
+
+def DCG(fp):
+    score = 0
+    result_l = []
+    for i, rel in enumerate(result_l):
+        score += rel / np.log2(i + 2)
+    return score
+
+
+def nDCG(fp):
+    dcg = DCG(fp)
+    idcg = DCG(sorted(fp, reverse=True))
+    return dcg / idcg
+
+
+def get_ndcg_ans():
     files = []
     marks = []
     with open('data/evaluation/train_topics_mod.qrel') as ans:
@@ -59,19 +117,23 @@ def get_ans():
     return files, marks
 
 
+def get_ans():
+    files = []
+    marks = []
+    with open('data/evaluation/train_topics_mod.qrel') as ans:
+        lines = ans.readlines()
+        for line in lines:
+            sp = line.split()
+            files.append(sp[2])
+            marks.append(sp[3])
+    return files, marks
+
+
 def ERR():
     pass
 
 
-def AP(fp):
-    pass
-
-
-def nDCG(fp):
-    pass
-
-
-# evaluate('data/evaluation/')
+evaluate('data/evaluation/')
 
 
 # this is used to remove the answers that are not in the first 100,000 paragraphs

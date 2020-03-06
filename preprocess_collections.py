@@ -11,6 +11,7 @@ MARCO_TRECWEB_LOC = 'data/collection.tsv.xml'
 cleanr = re.compile('<.*?>')
 
 
+# divide the dataset into pieces
 def process(loc, folder):
     with open(loc, 'r') as fp:
         line = fp.readline()
@@ -37,6 +38,7 @@ def process(loc, folder):
 # process(CAR_TRECWEB_LOC, "data/car_ids")
 
 
+# cut paragraph into sentences
 def reformat(path):
     i = 0
     for root, dirs, files in os.walk(path):
@@ -57,6 +59,7 @@ def reformat(path):
 nlp = English()
 
 
+# cut by 20 tokens
 def cut(path):
     i = 0
     result = []
@@ -71,13 +74,13 @@ def cut(path):
             with open(path + file, 'w', encoding='UTF-8') as fp:
                 for line in lines:
                     doc = nlp(line)
-                    cnt = 50
+                    cnt = 20
                     if len(doc) > cnt:
                         while len(doc) > cnt:
-                            print(doc[cnt - 50: cnt].text)
-                            fp.write(doc[cnt - 50:cnt].text + '\n')
-                            cnt += 50
-                        fp.write(doc[cnt - 50:].text + '\n')
+                            # print(doc[cnt - 20: cnt].text)
+                            fp.write(doc[cnt - 20:cnt].text + '\n')
+                            cnt += 20
+                        fp.write(doc[cnt - 20:].text + '\n')
                     else:
                         fp.write(doc.text)
 
@@ -95,12 +98,12 @@ def check(path):
             with open(path + file, 'r', encoding='UTF-8') as fp:
                 lines = fp.readlines()
                 for line in lines:
-                    if len(nlp(line)) > 60:
+                    if len(nlp(line)) > 25:
                         result.append(file)
                         flag = False
                         break
     if flag:
-        print("all < 60")
+        print("all < 25")
     else:
         print(result)
 
@@ -123,6 +126,6 @@ def test(path):
                         fp.write(line)
 
 
-test('data/marco_ids/')
-test('data/car_ids/')
+# test('data/marco_ids/')
+# test('data/car_ids/')
 # test('data/test_set/')

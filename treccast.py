@@ -240,9 +240,9 @@ class Treccast:
         # instead of using cos(vec1, vec2) = 0.8
 
         # prepare to delete
-        from app import query
-        if len(query) != len(conv_query_embeddings):
-            print('attention: Line 262')
+        # from app import query
+        # if len(query) != len(conv_query_embeddings):
+        #     print('attention: Line 262', 'queryLength', len(query), 'convLength', len(conv_query_embeddings))
 
         # para_score is a filename to int dict
         max_id, para_score = self.scoring(convquery_type, conv_query_embeddings, line_embeddings)

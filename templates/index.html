@@ -21,10 +21,9 @@
     <!--<div style="float: left; display: inline; width: 50%; padding: 2%">-->
     <div style="border:1px solid black; width: 600px;margin: 15px; padding: 15px">
         <form action="/getanswer" method="post" name="query">
-            <div>
                 <div style="margin: 5px; width: 100%">
                     <h3 style="margin: 5px;">Set question:</h3>
-                    <input style="display: inline; margin: 5px; width: 100%" class='form-control' type="text" name="q1"
+                    <input style="display: inline; margin: 5px; width: 98%" class='form-control' type="text" name="q1"
                            placeholder="Please input your question one by one">
                     <a href="/"><input style="display: inline; float: right; margin: 5px" class='btn btn-default'
                                        type="button" name="clear"
@@ -32,9 +31,7 @@
                     <input style="display: inline; float: right; margin: 5px" class='btn btn-default' type="submit"
                            name="add"
                            value="Add a Question">
-                    <!--                    <input style="float: right; margin: 5px" class="btn btn-default" type="submit">-->
                 </div>
-            </div>
 
 
             <div style="margin: 5px">
@@ -73,7 +70,7 @@
 
         {% if query.__len__(): %}
             {% for q in query %}
-                <h4>q</h4>
+                <h4>{{ q }}</h4>
             {% endfor %}
         {% endif %}
     </div>
