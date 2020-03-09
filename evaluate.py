@@ -42,7 +42,7 @@ def evaluate(path):
                     fp.write(res[j][0] + ' ' + res[j][1] + '\n')
             print('AP@5 is', AP())
             # print('nDCG@100 is', nDCG())
-            print('ERR@100 is', ERR())
+            # print('ERR@100 is', ERR())
 
     ans = open(ANSWER, 'r')
     res = open(RESULT, 'r')
@@ -133,8 +133,8 @@ def get_ndcg_ans():
     return files, marks
 
 
-def ERR():
-    pass
+# def ERR():
+#     pass
 
 
 # evaluate('data/evaluation/')
