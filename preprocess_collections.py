@@ -1,5 +1,5 @@
 import re
-import os.path
+import os
 from spacy.lang.en import English
 from nltk.tokenize import sent_tokenize
 
@@ -10,6 +10,11 @@ MARCO_TRECWEB_LOC = 'data/collection.tsv.xml'
 
 cleanr = re.compile('<.*?>')
 
+mar = []
+car = []
+# has := files in training set
+has = []
+
 
 # divide the dataset into pieces
 def process(loc, folder):
@@ -17,25 +22,24 @@ def process(loc, folder):
         line = fp.readline()
         id = ''
         cnt = 0
+        count = 660
+
         while line:
             if "DOCNO" in line:
                 id = re.sub(cleanr, '', line).replace('\n', '')
             if "<BODY>" in line:
                 cnt += 1
                 if cnt % 10000 == 0:
-                    print(10)
+                    print(10000)
                 paragraph = fp.readline()
                 if not os.path.isfile(folder + "/" + id + ".txt"):
                     with open(folder + "/" + id + ".txt", 'w') as out:
                         out.write(paragraph)
                         out.close()
-            if cnt == 100000:
-                break
+                        count += 1
+                        if count == 100000:
+                            return
             line = fp.readline()
-
-
-# process(MARCO_TRECWEB_LOC, "data/marco_ids")
-# process(CAR_TRECWEB_LOC, "data/car_ids")
 
 
 # cut paragraph into sentences
@@ -53,8 +57,8 @@ def reformat(path):
             i += 1
 
 
-# reformat("data/marco_ids/")
-# reformat("data/car_ids/")
+reformat("data/marco_ids/")
+reformat("data/car_ids/")
 
 nlp = English()
 
@@ -128,4 +132,41 @@ def test(path):
 
 # test('data/marco_ids/')
 # test('data/car_ids/')
+
+
 # test('data/test_set/')
+
+# remove the items of WAPO dataset
+def rearrange(path):
+    with open(path + 'evaluation/train_topics_mod.qrel', 'r') as ori:
+        lines = ori.readlines()
+        for line in lines:
+            name = line.split()[2]
+            if 'CAR' in name:
+                # append line instead of name when create result.txt
+                has.append(line)
+            elif 'MAR' in name:
+                has.append(line)
+            else:
+                # print('Error', line)
+                continue
+    with open(path + 'evaluation/answer.txt', 'w') as ans:
+        ans.writelines(has)
+
+
+# rearrange('data/')
+# process(MARCO_TRECWEB_LOC, "data/marco_ids")
+# process(CAR_TRECWEB_LOC, "data/car_ids")
+
+def modi(path):
+    for root, dirs, files in os.walk(path):
+        for file in files:
+            with open(path + file, 'r') as fp:
+                content = ['<DOC><DOCNO>' + file + '</DOCNO><TEXT>\n']
+                content += fp.readlines()
+                content += ['</TEXT></DOC>']
+            with open(path + file, 'w') as fp:
+                fp.writelines(content)
+
+
+modi('data/terrier_ids/')

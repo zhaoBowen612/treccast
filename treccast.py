@@ -3,23 +3,22 @@ import os
 from spacy.lang.en import English
 from sklearn.metrics.pairwise import cosine_similarity
 import time
+import subprocess
 
 nlp = English()
 stemmer = PorterStemmer()  # 词干分析器，将一词多态转化为一个词干
 
-# location of Indri index files
-CAR_INDEX_LOC = 'data/indri_data/car_index/'
-MARCO_INDEX_LOC = 'data/indri_data/marco_index/'
+# location of terrier index files
+# CAR_INDEX_LOC = 'data/terrier_data/car_index/'
+# MARCO_INDEX_LOC = 'data/terrier_data/marco_index/'
 
 # locations of txt files for each MARCO\CAR id
 # (to create these files from the MARCO\CAR collections use preprocess_collections.py)
-CAR_ID_LOC = 'data/car_ids'
-MARCO_ID_LOC = 'data/marco_ids'
+CAR_ID_LOC = 'data/car_ids/'
+MARCO_ID_LOC = 'data/marco_ids/'
 
-# location of Indri command line tool
-INDRI_LOC = '/usr/local/bin'
-# the co-occurrence window is set to 3 for our graph
-COOC_WINDOW = 3
+# location of terrier command line tool
+TERRIER_LOC = '/usr/local/terrier-project-5.2/'
 
 # number of documents in MARCO TREC-CAsT corpus
 # nbr_docs = 8635155
@@ -44,95 +43,83 @@ class Treccast:
     # get tokenized paragraph, embeddings for each token and the information in which paragraph certain token appears
     # paragraph_map is a file name to paragraph dict
     def getParagraphInfos(self, paragraph_map):
-        # print('getParagraphInfos')
         filename_to_embeddings = dict()
         # paragraph_map is dict str:str
         for key in paragraph_map:
             # key is the file name like MARCO_1.txt
             # break one paragraph into sentences list
             lines = list(line for line in paragraph_map[key])
-            # ll = []
-            # for line in lines:
-            # line = line.strip('\n')
-            # line = line.strip(' ')
-            # ll.append(line)
-            # ll = list(filter(None, ll))
-            # filename_to_embeddings[key] = self.word_vectors.encode(ll)
             filename_to_embeddings[key] = self.word_vectors.encode(lines)
         return filename_to_embeddings
 
-    # parse indri result file
-    # returns paragraphs and its corresponding scores given by indri
-    def processIndriResult(self, filename):
+    # parse terrier result file
+    # returns paragraphs and its corresponding scores given by terrier
+    def processTerrierResult(self, filename):
         with open(filename, 'r') as fp:
             # each line represent one file of car or marco
-            indri_line = fp.readline()
-            indri_paragraphs = dict()
+            cnt = 0
+            terrier_line = fp.readline()
+            cnt += 1
+            terrier_paragraphs = dict()
             paragraph_score = dict()  # initially should store the ranking of each paragraph
-            while indri_line:
-                splits = indri_line.split(" ")
-                splits[2] = splits[2].replace('home', 'Users')
-                splits[2] = splits[2].replace('crown', 'CROWN')
+            while terrier_line:
+                splits = terrier_line.split(" ")
                 paragraph = []
-                # find the related files according to each line in result indri file
+                # find the related files according to each line in result terrier file
                 if len(splits) < 5:
-                    # self.logger.warn("processed indri line has not the expected format!")
-                    indri_line = fp.readline()
+                    print("processed terrier line has not the expected format!")
+                    terrier_line = fp.readline()
                     continue
                 if "MARCO" in splits[2]:
-                    # if os.path.exists(MARCO_ID_LOC + splits[2] + ".txt"):
-                    if os.path.exists(splits[2]):
+                    if os.path.exists(MARCO_ID_LOC + splits[2]):
                         try:
-                            # print('find an marco file')
-                            with open(splits[2], "r", encoding='UTF-8') as id_file:
-                                # paragraph.append(line for line in id_file.readlines())
-                                paragraph = id_file.readlines()
-                                id_file.close()
-                        except IOError:
-                            continue
-                    # else:
-                    #     self.logger.warn("no file with this id found, id was: %s", splits[2])
-                elif "CAR" in splits[2]:
-                    # if os.path.exists(CAR_ID_LOC + splits[2] + ".txt"):
-                    if os.path.exists(splits[2]):
-                        try:
-                            with open(splits[2], "r", encoding='UTF-8') as id_file:
-                                # print('find an car file')
+                            with open(MARCO_ID_LOC + splits[2], "r", encoding='UTF-8') as id_file:
                                 paragraph = id_file.readlines()
                                 id_file.close()
                         except IOError:
                             continue
                     else:
-                        # self.logger.warn("no file with this id found, id was: %s", splits[2])
+                        print("no file with this id found, id was: %s" % splits[2])
+                elif "CAR" in splits[2]:
+                    if os.path.exists(CAR_ID_LOC + splits[2]):
+                        try:
+                            with open(CAR_ID_LOC + splits[2], "r", encoding='UTF-8') as id_file:
+                                paragraph = id_file.readlines()
+                                id_file.close()
+                        except IOError:
+                            continue
+                    else:
                         print("no file with this id found, id was: %s" % splits[2])
                 if paragraph:
                     # splits[2] is the file name, splits[3] is the ranking 1,2,3...
-                    indri_paragraphs[splits[2]] = paragraph
-                    paragraph_score[splits[2]] = splits[3]
-                indri_line = fp.readline()
-        # indri_paragraph is filename: [lines]
-        return indri_paragraphs, paragraph_score
+                    terrier_paragraphs[splits[2]] = paragraph
+                    paragraph_score[splits[2]] = int(splits[3]) + 1
+                if cnt == 10:
+                    break
+                terrier_line = fp.readline()
+                cnt += 1
+        # terrier_paragraph is filename: [lines]
+        return terrier_paragraphs, paragraph_score
 
-    # creates an indri .query file using the unweighted combination of queries
+    # creates an terrier .query file using the unweighted combination of queries
     # from the current the previous and the first turn
-    def createIndriQuery(self, tokens, query_tokens, turn_nbr):
+    def createTerrierQuery(self, tokens, query_tokens, turn_nbr):
         # create '.query'file first
-        with open("data/indri_data/indri_queries/" + str(self.call_time) + "_turn" + str(
-                turn_nbr + 1) + "_indri-query.query", "w") as query_file:
-            xmlString = '''<parameters> <index>''' + MARCO_INDEX_LOC + '''</index>
-                    <index>''' + CAR_INDEX_LOC + '''</index>
-                    <query><number>''' + str(turn_nbr + 1) + '''</number>'''
+        with open("data/terrier_data/terrier_queries/" + str(self.call_time) + "_turn" + str(
+                turn_nbr + 1) + "_terrier-query.xml", "w") as query_file:
+            xmlString = '<TOP><NUM>001</NUM><TITLE>'
+
             if turn_nbr == 0:
                 # map(function, iterable argus)
                 line_str = " ".join(map(str, tokens))  # 'token1 token2 token3'
-                new_line = "<text>#combine(" + line_str + ")</text>"
+                new_line = line_str
             elif turn_nbr == 1:
                 prev_data = query_tokens[turn_nbr - 1]
                 line_str = " ".join(map(str, tokens)) + " " + "  ".join(map(str, prev_data))
                 words = line_str.split()
                 # what is 'key=words.index'
                 line_str = " ".join(sorted(set(words), key=words.index))  # not sure yet
-                new_line = "<text>#combine(" + line_str + ")</text>"
+                new_line = line_str
             else:
                 prev_data = query_tokens[turn_nbr - 1]
                 first_data = query_tokens[0]
@@ -140,10 +127,9 @@ class Treccast:
                     map(str, first_data))
                 words = line_str.split()
                 line_str = " ".join(sorted(set(words), key=words.index))
-                new_line = "<text>#combine(" + line_str + ")</text>"
+                new_line = line_str
             xmlString += new_line
-            xmlString += '''</query></parameters>'''
-            # print('query is: ' + xmlString)
+            xmlString += '</TITLE></TOP>'
             query_file.write(xmlString)
 
     # main answering function: receives all relevant parameters to answer the request
@@ -152,7 +138,7 @@ class Treccast:
         # read in the parameters, these parameters are ot from input json
         conv_queries = parameters["questions"]
         turn_nbr = len(conv_queries) - 1
-        INDRI_RET_NUM = int(parameters["indriRetNbr"])
+        terrier_RET_NUM = int(parameters["terrierRetNbr"])
         res_nbr = int(parameters["retNbr"])
         convquery_type = parameters["convquery"]
         h1 = float(parameters["h1"])
@@ -200,58 +186,41 @@ class Treccast:
             #             continue
             #     query_turn_weights[token] = (j + 1) / (turn_nbr + 1)
 
-        # create Indri query
+        # create terrier query
         # tokens are all tokens in the current query,
         # query_tokens[0] := all tokens of the first query,
         # turn_nbr := the index of the current query
-        self.createIndriQuery(tokens, query_tokens, turn_nbr)
-        # print("indri query created successfully")
+        self.createTerrierQuery(tokens, query_tokens, turn_nbr)
 
-        # TODO: RECOVER
-        # do indri search
-        # print('sending query')
-        # subprocess.run(['scp', 'data/indri_data/indri_queries/indri-query.query',
-        #                 'zhaobowen@192.168.176.161:~/PycharmProjects/treccast/data/indri_data/indri_queries/'])
-        # while not os.path.exists('data/indri_data/indri_results/result.txt'):
-        #     time.sleep(1)
-        # print('received')
+        # do terrier search
+        subprocess.run([TERRIER_LOC + "/bin/terrier", "batchretrieve", "-t",
+                        "data/terrier_data/terrier_queries/" + str(self.call_time) + "_turn" + str(
+                            turn_nbr + 1) + "_terrier-query.xml"])
+        os.rename('data/terrier_data/terrier_results/results.res',
+                  'data/terrier_data/terrier_results/result' + "_" + str(self.call_time) + "_turn" + str(
+                      turn_nbr + 1) + '.txt')
 
-        '''
-        subprocess.run([INDRI_LOC + "/IndriRunQuery",
-                        "data/indri_data/indri_queries/" + str(self.call_time) + "_turn" + str(
-                            turn_nbr + 1) + "_indri-query.query", "-count= " + str(INDRI_RET_NUM),
-                        "-trecFormat=true"], stdout=outfile)
-        '''
-        # prepare indri paragraphs: get paragraph sentences and original indri scores from indri result file
-        # indri_paragraph_score is file name to ranking. get reciprocal as the Indri mark
-        indri_paragraphs, indri_paragraph_score = self.processIndriResult(
-            # 'data/indri_data/indri_results/result' + "_" + str(self.call_time) + "_turn" + str(turn_nbr + 1) + '.txt')
-            'data/indri_data/indri_results/result.txt')
+        # prepare terrier paragraphs: get paragraph sentences and original terrier scores from terrier result file
+        # terrier_paragraph_score is file name to ranking. get reciprocal as the terrier mark
+        terrier_paragraphs, terrier_paragraph_score = self.processTerrierResult(
+            'data/terrier_data/terrier_results/result' + "_" + str(self.call_time) + "_turn" + str(
+                turn_nbr + 1) + '.txt')
         # TODO: takes the longest time
         # line_embedding is a filename to embeddings dict
-        line_embeddings = self.getParagraphInfos(indri_paragraphs)
+        line_embeddings = self.getParagraphInfos(terrier_paragraphs)
 
-        # calculate indri_score which is 1 / indri rank
-        for i in indri_paragraph_score.keys():
-            indri_paragraph_score[i] = 1 / int(indri_paragraph_score[i])
+        # calculate terrier_score which is 1 / terrier rank
+        for i in terrier_paragraph_score.keys():
+            terrier_paragraph_score[i] = 1 / int(terrier_paragraph_score[i])
 
-        # calculate line_score by bert
-        # use cos(vec1, vec2) > cos(vec1, vec3) to show similarity between vec1 and vec2 is higher
-        # instead of using cos(vec1, vec2) = 0.8
-
-        # prepare to delete
         # from app import query
         # if len(query) != len(conv_query_embeddings):
         #     print('attention: Line 262', 'queryLength', len(query), 'convLength', len(conv_query_embeddings))
 
         # para_score is a filename to int dict
         max_id, para_score = self.scoring(convquery_type, conv_query_embeddings, line_embeddings)
-
-        # TODO: recover
-        # os.remove('data/indri_data/indri_results/result.txt')
-        # print('removed')
-
-        return max_id, para_score, indri_paragraphs[max_id]
+        print('index', max_id)
+        return max_id, para_score, terrier_paragraphs[max_id]
 
     def scoring(self, convquery_type, conv_query_embeddings, line_embeddings):
         max_id = ''
@@ -346,7 +315,7 @@ class Treccast:
                         if cs > score3:
                             score3 = cs
                     # weight is (len - 1)/ len
-                    weight = (len(conv_query_embeddings) - 1)/len(conv_query_embeddings)
+                    weight = (len(conv_query_embeddings) - 1) / len(conv_query_embeddings)
                     para_score[index] = score1 + score2 * weight + score3
                     if para_score[index] > max_score:
                         max_score = para_score[index]
@@ -372,4 +341,3 @@ class Treccast:
                     max_score = para_score[index]
                     max_id = index
         return max_id, para_score
-

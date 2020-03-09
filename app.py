@@ -28,7 +28,7 @@ def getanswer():
         # content = request.get_json()
         query.append(request.form.get('q1'))
         content = {"questions": query,
-                   "indriRetNbr": request.form.get('inum'),
+                   "terrierRetNbr": request.form.get('inum'),
                    "retNbr": request.form.get('rnum'),
                    "convquery": request.form.get('sel'),
                    "h1": request.form.get('h1'),
@@ -36,6 +36,11 @@ def getanswer():
                    }
         t = Treccast(model)
         result_ids, para_score, result_content = t.retrieveAnswer(content)
+        print('-----------------')
+        for name, score in para_score.items():
+            print('file:', name, 'score:', score)
+
+        print('-----------------')
         # 评估的时候需要返回所有段落及评分
         result.append((result_ids, para_score[result_ids], result_content))
         # result = jsonify(paragraphs=result_paragraphs, ids=result_ids, nodes=result_node_map, edges=result_edge_map)
