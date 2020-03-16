@@ -9,7 +9,9 @@ ANSWER = 'data/evaluation/answer.txt'
 BERT_UW_RETURN = 'data/evaluation/bert_uw_return.txt'
 BERT_W1_RETURN = 'data/evaluation/bert_w1_return.txt'
 BERT_W2_RETURN = 'data/evaluation/bert_w2_return.txt'
-CROWN_RETURN = 'data/evaluation/crown_return.txt'
+CROWN_UW_RETURN = 'data/evaluation/crown_uw_return.txt'
+CROWN_W1_RETURN = 'data/evaluation/crown_w1_return.txt'
+CROWN_W2_RETURN = 'data/evaluation/crown_w2_return.txt'
 RESULT = 'data/indri_data/indri_result/result.txt'
 
 '''
@@ -73,7 +75,6 @@ def get_ans():
         lines = ans.readlines()
         for line in lines:
             sp = line.split()
-            print(sp[0])
             if sp[3] != '0':
                 if not turn.get(sp[0]):
                     turn.update({sp[0]: [sp[2] + '.txt']})
@@ -84,7 +85,7 @@ def get_ans():
     return turn
 
 
-def AP():
+def AP(comp):
     ap = 0
     # turn_ans['1_2'] = "(MARCO_955948.txt, 2)"
     turn_ans = get_ans()
@@ -94,37 +95,51 @@ def AP():
     # retrieved result, like
     result_l = dict()
     # ret.txt should be the output file of the 30 queries
-    with open(BERT_UW_RETURN, 'r') as ret:
+    with open(comp, 'r') as ret:
         lines = ret.readlines()
         for line in lines:
             sp = line.split()
-            if sp[1] in turn_ans[sp[0]]:
-                if not result_l.get(sp[0]):
-                    result_l.update({sp[0]: [1]})
+            try:
+                if sp[1] in turn_ans[sp[0]]:
+                    if not result_l.get(sp[0]):
+                        result_l.update({sp[0]: [1]})
+                    else:
+                        result_l[sp[0]].append(1)
                 else:
-                    result_l[sp[0]].append(1)
-            else:
-                if not result_l.get(sp[0]):
-                    result_l.update({sp[0]: [0]})
-                else:
-                    result_l[sp[0]].append(0)
+                    if not result_l.get(sp[0]):
+                        result_l.update({sp[0]: [0]})
+                    else:
+                        result_l[sp[0]].append(0)
+            except KeyError:
+                # print(sp[0])
+                pass
+    # for key in result_l.keys():
+    #     print(key, result_l[key])
     # actual relevant items
     rel_l = {}
-    with open('data/evaluation/train.txt', 'r') as train:
+    with open('data/evaluation/answer.txt', 'r') as train:
         lines = train.readlines()
         for line in lines:
             sp = line.split()
             if sp[3]:
-                rel_l[sp[0]].append(sp[2] + '.txt')
-    sum = 0
-    for k in result_l.items():
+                if not rel_l.get(sp[0]):
+                    rel_l.update({sp[0]: []})
+                else:
+                    rel_l[sp[0]].append(sp[2] + '.txt')
+    res = 0
+    for k in result_l.keys():
+        # print(result_l[k])
         cnt = 0
-        for i, rel in enumerate(k):
-            if rel in rel_l:
+        ap = 0
+        # rel is 0 or 1
+        for i, rel in enumerate(result_l[k]):
+            if not rel:
                 cnt += 1
-                ap += cnt / i + 1  # 第i个语段在相关列表中的位置 1/2 表示第一个文档在相关文档(generated)中第二位
-        sum += ap / cnt
-    return sum / len(result_l.items())
+                ap += cnt / (i + 1)  # 第i个语段在相关列表中的位置 1/2 表示第一个文档在相关文档(generated)中第二位
+        if cnt:
+            res += ap / cnt
+    # calculate average AP of each turn
+    return res / len(result_l.keys())
 
 
 def DCG(fp):
@@ -158,8 +173,12 @@ def get_ndcg_ans():
 
 
 # evaluate('data/evaluation/')
-# print(AP())
-
+# print(AP(BERT_UW_RETURN))
+# print(AP(BERT_W1_RETURN))
+# print(AP(BERT_W2_RETURN))
+# print(AP(CROWN_UW_RETURN))
+# print(AP(CROWN_W1_RETURN))
+# print(AP(CROWN_W2_RETURN))
 
 # this is used to remove the answers that are not in the first 100,000 paragraphs
 def rearrange(path):
@@ -197,5 +216,4 @@ def rearrange(path):
         train.writelines(has)
     return error
 
-
-missing = rearrange('data/')
+# missing = rearrange('data/')
