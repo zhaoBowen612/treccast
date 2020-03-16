@@ -136,25 +136,6 @@ def test(path):
 
 # test('data/test_set/')
 
-# remove the items of WAPO dataset
-def rearrange(path):
-    with open(path + 'evaluation/train_topics_mod.qrel', 'r') as ori:
-        lines = ori.readlines()
-        for line in lines:
-            name = line.split()[2]
-            if 'CAR' in name:
-                # append line instead of name when create result.txt
-                has.append(line)
-            elif 'MAR' in name:
-                has.append(line)
-            else:
-                # print('Error', line)
-                continue
-    with open(path + 'evaluation/answer.txt', 'w') as ans:
-        ans.writelines(has)
-
-
-# rearrange('data/')
 # process(MARCO_TRECWEB_LOC, "data/marco_ids")
 # process(CAR_TRECWEB_LOC, "data/car_ids")
 
@@ -168,5 +149,4 @@ def modi(path):
             with open(path + file, 'w') as fp:
                 fp.writelines(content)
 
-
-modi('data/terrier_ids/')
+# modi('data/terrier_ids/')

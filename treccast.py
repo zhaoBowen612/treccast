@@ -94,7 +94,7 @@ class Treccast:
                     # splits[2] is the file name, splits[3] is the ranking 1,2,3...
                     terrier_paragraphs[splits[2]] = paragraph
                     paragraph_score[splits[2]] = int(splits[3]) + 1
-                if cnt == 10:
+                if cnt == 20:
                     break
                 terrier_line = fp.readline()
                 cnt += 1
@@ -174,7 +174,7 @@ class Treccast:
             # convquery_type == "conv_w2":  # all queries are considered
             # query_turn_weights = dict()  # token to related query turn weight
             # conv_query_embeddings.clear()
-            print('conv_query_embeddings', conv_query_embeddings)
+            # print('conv_query_embeddings', conv_query_embeddings)
             for i in range(turn_nbr + 1):
                 conv_query_embeddings.append(turn_query_embeddings[i])
             #     conv_query_embeddings[token] = t_embeddings[token]
@@ -195,7 +195,7 @@ class Treccast:
         # do terrier search
         subprocess.run([TERRIER_LOC + "/bin/terrier", "batchretrieve", "-t",
                         "data/terrier_data/terrier_queries/" + str(self.call_time) + "_turn" + str(
-                            turn_nbr + 1) + "_terrier-query.xml"])
+                            turn_nbr + 1) + "_terrier-query.xml"], stdout=subprocess.PIPE)
         os.rename('data/terrier_data/terrier_results/results.res',
                   'data/terrier_data/terrier_results/result' + "_" + str(self.call_time) + "_turn" + str(
                       turn_nbr + 1) + '.txt')
@@ -219,7 +219,6 @@ class Treccast:
 
         # para_score is a filename to int dict
         max_id, para_score = self.scoring(convquery_type, conv_query_embeddings, line_embeddings)
-        print('index', max_id)
         return max_id, para_score, terrier_paragraphs[max_id]
 
     def scoring(self, convquery_type, conv_query_embeddings, line_embeddings):
@@ -289,11 +288,11 @@ class Treccast:
                     for vec in embeddings:
                         cs = cosine_similarity(conv_query_embeddings[0], [vec])
                         # update line_score of one paragraph
-                        if cs > para_score:
+                        if cs > score1:
                             score1 = cs
                     for vec in embeddings:
                         cs = cosine_similarity(conv_query_embeddings[1], [vec])
-                        if cs > para_score:
+                        if cs > score2:
                             score2 = cs
                     para_score[index] = score1 + score2
                     if para_score[index] > max_score:
