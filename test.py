@@ -8,10 +8,14 @@ nlp = English()
 
 paragraph_map = {}
 
-has = dict()
-has1 = {}
+has = {1: 2, 2: 3, 3: 4, 4: 5}
 
-with open('data/evaluation/bert_uw_return.txt', 'r') as fp:
-    line = fp.readline().split()
-    rank = line[2].strip('[]',)
-    print(rank)
+print(has[1])
+print(has.get(5))
+print(has[5])
+
+
+# with open('data/evaluation/bert_uw_return.txt', 'r') as fp:
+#     line = fp.readline().split()
+#     rank = line[2].strip('[]',)
+#     print(rank)

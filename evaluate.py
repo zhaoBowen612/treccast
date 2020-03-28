@@ -14,16 +14,15 @@ CROWN_W1_RETURN = 'data/evaluation/crown_w1_return.txt'
 CROWN_W2_RETURN = 'data/evaluation/crown_w2_return.txt'
 RESULT = 'data/indri_data/indri_result/result.txt'
 
-'''
 # load word embeddings
-model = BertClient()
+# model = BertClient()
 
-
+'''
 def evaluate(path):
     # thirty_queries[0:29]
     thirty_queries = get_query()
     # ans, mark = get_ans()
-    with open(BERT_W2_RETURN, 'w') as fp:
+    with open(BERT_UW_RETURN, 'w') as fp:
         for i in range(30):
             t = Treccast(model)
             print('conversation', i + 1)
@@ -35,23 +34,19 @@ def evaluate(path):
                 current.append(turn)
                 content = {"questions": current,
                            "terrierRetNbr": '10',
-                           "retNbr": '10',
-                           # "convquery": "conv_uw",
+                           "retNbr": '20',
+                           "convquery": "conv_uw",
                            # "convquery": "conv_w1",
-                           "convquery": "conv_w2",
+                           # "convquery": "conv_w2",
                            "h1": '0.5',
                            "h2": '0.5',
                            }
-                result_ids, para_score, result_content = t.retrieveAnswer(content)
+                result_ids, para_score, result_content = t.retrieveAnswer(content, attention=False)
                 # res := (id, mark) from high to low
                 res = sorted(para_score.items(), key=lambda item: item[1], reverse=True)
                 # write all return result into files
                 for j in range(len(res)):
                     fp.write(str(i + 1) + '_' + str(turn_id) + ' ' + str(res[j][0]) + ' ' + str(res[j][1]) + '\n')
-            # print('AP@5 is', AP())
-            # print('nDCG@100 is', nDCG())
-            # print('ERR@100 is', ERR())
-
 '''
 
 
@@ -68,7 +63,7 @@ def get_query():
     return thirty_queries
 
 
-def get_ans():
+def get_ap_ans():
     # only relevant or not matters
     turn = dict()
     with open(ANSWER) as ans:
@@ -88,7 +83,7 @@ def get_ans():
 def AP(comp):
     ap = 0
     # turn_ans['1_2'] = "(MARCO_955948.txt, 2)"
-    turn_ans = get_ans()
+    turn_ans = get_ap_ans()
     # for k in turn_ans.keys():
     #     print(k)
     # print(turn_ans)
@@ -142,26 +137,92 @@ def AP(comp):
     return res / len(result_l.keys())
 
 
-def DCG(fp):
+def get_dcg_ans():
+    # consider rank of relevance
+    turn = dict()
+    with open(ANSWER) as ans:
+        lines = ans.readlines()
+        for line in lines:
+            sp = line.split()
+            if sp[3] != '0':
+                if not turn.get(sp[0]):
+                    turn.update({sp[0]: {sp[2]: sp[3]}})
+                else:
+                    turn[sp[0]].update({sp[2]: sp[3]})
+                # turn['1_2'] = [{'file1': 2, :, :}]
+    return turn
+
+
+# get_output should return rel_l['1_1] = [2,0,1,2,0,0]
+def get_output(path):
+    rel_l = {}
+    # result_l is from training set
+    result_l = get_dcg_ans()
+    with open(path, 'r') as fp:
+        lines = fp.readlines()
+        for line in lines:
+            sp = line.split()
+            # first whether the key '1_1' existed
+            if not rel_l.get(sp[0]):
+                rel_l.update({sp[0]: []})
+                # whether the search result is in the training set
+                try:
+                    if result_l[sp[0]].get(sp[1].replace('.txt', '')):
+                        rel_l[sp[0]].append(int(result_l[sp[0]].get(sp[1].replace('.txt', ''))))
+                    else:
+                        # not in the training set mean 0 relevance
+                        rel_l[sp[0]].append(0)
+                except KeyError:
+                    pass
+            # key '1_1' is existed
+            else:
+                try:
+                    # whether the search result is in the training set
+                    if result_l[sp[0]].get(sp[1].replace('.txt', '')):
+                        rel_l[sp[0]].append(int(result_l[sp[0]].get(sp[1].replace('.txt', ''))))
+                    else:
+                        # not in the training set mean 0 relevance
+                        rel_l[sp[0]].append(0)
+                except KeyError:
+                    pass
+        return rel_l
+
+
+def cal_dcg(path):
+    res = 0
+    cnt = 0
+    # rel_l is from the output of the algorithm
+    rel_l = get_output(path)
+    for k in rel_l.keys():
+        # print(k, rel_l[k])
+        res += nDCG(rel_l[k])
+        cnt += 1
+    return res / cnt
+
+
+def DCG(seq):
     score = 0
-    result_l = []
-    for i, rel in enumerate(result_l):
-        score += rel / np.log2(i + 2)
+    for i, rel in enumerate(seq):
+        score += pow(2, rel) / np.log2(i + 2)  # (i + 1) + 1
+        # score += rel / np.log2(i + 2)  # (i + 1) + 1
     return score
 
 
-def nDCG(fp):
-    # fp should be sequence of the ranks like 2 1 2 0 0 1
-    dcg = DCG(fp)
+def nDCG(seq):
+    # seq should be sequence of the ranks like 2 1 2 0 0 1
+    dcg = DCG(seq)
     # IDCG should be sorted version of ranks
-    idcg = DCG(sorted(fp, reverse=True))
-    return dcg / idcg
+    idcg = DCG(sorted(seq, reverse=True))
+    if idcg:
+        return dcg / idcg
+    else:
+        return 0
 
 
 def get_ndcg_ans():
     files = []
     marks = []
-    with open('data/evaluation/train_topics_mod.qrel') as ans:
+    with open(ANSWER) as ans:
         # line is 'MARCO_955948'
         files.append(ans.readline().split()[2])
         marks.append(ans.readline().split()[3])
@@ -173,12 +234,20 @@ def get_ndcg_ans():
 
 
 # evaluate('data/evaluation/')
-# print(AP(BERT_UW_RETURN))
-# print(AP(BERT_W1_RETURN))
-# print(AP(BERT_W2_RETURN))
-# print(AP(CROWN_UW_RETURN))
-# print(AP(CROWN_W1_RETURN))
-# print(AP(CROWN_W2_RETURN))
+print(cal_dcg(BERT_UW_RETURN))
+print(cal_dcg(BERT_W1_RETURN))
+print(cal_dcg(BERT_W2_RETURN))
+print(cal_dcg(CROWN_UW_RETURN))
+print(cal_dcg(CROWN_W1_RETURN))
+print(cal_dcg(CROWN_W2_RETURN))
+
+print(AP(BERT_UW_RETURN))
+print(AP(BERT_W1_RETURN))
+print(AP(BERT_W2_RETURN))
+print(AP(CROWN_UW_RETURN))
+print(AP(CROWN_W1_RETURN))
+print(AP(CROWN_W2_RETURN))
+
 
 # this is used to remove the answers that are not in the first 100,000 paragraphs
 def rearrange(path):
